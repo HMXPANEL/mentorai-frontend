@@ -586,7 +586,13 @@ const tok = await getIdToken();
 if (!tok) {
 errMsg = "Not authenticated. Please login again.";
 throw new Error("No auth token");
+
 }
+// ─── Wake Render (prevents cold start failure) ───
+try {
+  await fetch(`${API_URL}/health`);
+  await new Promise(r => setTimeout(r, 3000)); // give server time to fully boot
+} catch {}
 
 const resp = await fetch(`${API_URL}/api/chat`, {  
   method:  "POST",  
