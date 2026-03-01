@@ -1,8 +1,9 @@
 /**
 
-chat.js — Production Chat Controller v3
+chat.js — Production Chat Controller v3.4
 
 Features: streaming, file upload (TXT+IMG), voice input, markdown, multi-conv
+Upgrades: Resilient wake strategy, UI lock prevention, buffer safety, 5xx recovery
 */
 
 
@@ -40,6 +41,9 @@ recognizing: false,
 recognition: null
 };
 
+// Guard to prevent spamming health endpoint
+let backendWarmed = false;
+
 /* ── DOM ────────────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
 
@@ -60,6 +64,9 @@ updateSidebarUser();
 loadConvs();
 if (S.convs.length === 0) newChat();
 else activateConv(S.convs[0].id);
+
+// Warm backend silently on load
+wakeBackend();
 });
 });
 
@@ -513,6 +520,55 @@ catch (e) { toast("Could not start microphone.", "error"); }
 }
 
 /* ════════════════════════════════════════════════════════════════
+PRODUCTION UTILITIES: WAKE & RETRY
+════════════════════════════════════════════════════════════════ */
+
+// Resilient wake strategy: success-only flagging
+async function wakeBackend(timeout = 15000) {
+  // Prevent spamming health endpoint
+  if (backendWarmed) return;
+
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    await fetch(`${API_URL}/health`, {
+      method: "GET",
+      signal: controller.signal
+    });
+    // Only mark warmed on success
+    backendWarmed = true;
+  } catch {
+    // ignore — allows retry on next message if failed
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+// SaaS-grade retry logic (handles 5xx cold starts)
+async function fetchWithRetry(url, options, retries = 2, delay = 2000) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const res = await fetch(url, options);
+
+      // Retry only on server errors (5xx) or network failure
+      if (!res.ok && res.status >= 500 && i < retries) {
+        // Reset warm state on 5xx (server might have crashed/restarted)
+        backendWarmed = false;
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+
+      return res;
+    } catch (err) {
+      if (err.name === "AbortError") throw err;
+      if (i === retries) throw err;
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
 SEND MESSAGE
 ════════════════════════════════════════════════════════════════ */
 async function sendMessage() {
@@ -552,10 +608,14 @@ scrollBottom();
 
 /* Create streaming AI bubble */
 const { bubble } = buildMsgDOM("ai", "", true, []);
-scrollBottom();
+
+// Improve User Feedback During Cold Start (UX Improvement)
+bubble.innerHTML = `<span style="opacity:0.6">Connecting to AI...</span>`;
 const cursor = document.createElement("span");
 cursor.className = "cursor-blink";
 bubble.appendChild(cursor);
+
+scrollBottom();
 
 /* Build API payload */
 const conv    = activeConv();
@@ -579,6 +639,9 @@ mimeType: a.mimeType || "text/plain"
 
 let aiText = "", errMsg = null;
 
+// Define timeout handle outside to ensure cleanup
+let requestTimeoutId;
+
 try {
 S.abort   = new AbortController();
 const tok = await getIdToken();
@@ -586,15 +649,17 @@ const tok = await getIdToken();
 if (!tok) {
 errMsg = "Not authenticated. Please login again.";
 throw new Error("No auth token");
-
 }
-// ─── Wake Render (prevents cold start failure) ───
-try {
-  await fetch(`${API_URL}/health`);
-  await new Promise(r => setTimeout(r, 3000)); // give server time to fully boot
-} catch {}
 
-const resp = await fetch(`${API_URL}/api/chat`, {  
+// Smart wake before request (guarded internally)
+await wakeBackend();
+
+// Enforce hard request timeout (60s)
+requestTimeoutId = setTimeout(() => {
+  if (S.abort) S.abort.abort();
+}, 60000);
+
+const resp = await fetchWithRetry(`${API_URL}/api/chat`, {  
   method:  "POST",  
   signal:  S.abort.signal,  
   headers: {
@@ -606,7 +671,7 @@ body: JSON.stringify({
 message:             text,
 history,
 model,
-plan,
+// REMOVED: plan (redundant, backend uses token)
 tone:                profile.tone              || "helpful",
 custom_instructions: profile.customInstructions || "",
 nickname:            profile.nickname           || "",
@@ -624,6 +689,9 @@ else if (resp.status === 403) { errMsg = "This model requires a Pro plan."; }
 else if (!resp.ok) {  
   const b = await resp.text().catch(() => "");  
   errMsg = `Server error (${resp.status}). ${b.slice(0, 100)}`;  
+} else if (!resp.body) {
+  // Safety check: response OK but no body (proxy edge case)
+  errMsg = "Invalid server response (no body).";
 } else {  
   /* Stream SSE */  
   const reader  = resp.body.getReader();  
@@ -634,6 +702,10 @@ else if (!resp.ok) {
     const { done, value } = await reader.read();  
     if (done) break;  
     buf += decoder.decode(value, { stream: true });  
+
+    // Safety: prevent buffer overflow on malformed streams
+    if (buf.length > 100000) buf = "";
+
     const lines = buf.split("\n");  
     buf = lines.pop();  
 
@@ -648,7 +720,8 @@ else if (!resp.ok) {
           const tok = p.choices?.[0]?.delta?.content ?? "";  
           if (tok) {  
             aiText += tok;  
-            cursor.remove();  
+            // Safe cursor removal
+            if (cursor.parentNode) cursor.remove();
             bubble.innerHTML = renderMD(aiText);  
             bubble.appendChild(cursor);  
             scrollBottom();  
@@ -660,11 +733,22 @@ else if (!resp.ok) {
 }
 
 } catch (e) {
-if (e.name !== "AbortError") errMsg = `Connection error. Is the backend running at ${API_URL}?`;
+// FIX: AbortError now flows to finalization to unlock UI
+if (e.name === "AbortError") {
+  errMsg = "Request timed out.";
+} else if (!navigator.onLine) {
+  errMsg = "You're offline. Check your internet connection.";
+} else {
+  errMsg = "Server is waking up... please try again.";
+}
+} finally {
+  // Always clear the hard timeout
+  if (requestTimeoutId) clearTimeout(requestTimeoutId);
 }
 
 /* Finalise */
-cursor.remove();
+// Safe cursor removal
+if (cursor.parentNode) cursor.remove();
 S.abort = null;
 
 if (errMsg) {
