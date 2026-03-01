@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MentorAI — Settings</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+</head>
+<body>
+<div class="atm" aria-hidden="true"></div>
+
+<div class="settings-wrap">
+
+  <!-- Top bar -->
+  <div class="settings-topbar">
+    <a href="index.html" class="back-btn" aria-label="Back to chat">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </a>
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <h1 class="settings-title">Settings</h1>
+        <span id="planBadge" class="badge badge-free">Free</span>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="logoutBtn" style="gap:6px;color:var(--text-2);">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+      Log out
+    </button>
+  </div>
+
+  <!-- Panel -->
+  <div class="glass settings-panel">
+
+    <!-- ① Profile -->
+    <div class="s-block">
+      <div class="s-block-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Profile
+      </div>
+
+      <div class="av-section">
+        <div class="av-lg" id="avPreview">U</div>
+        <div class="av-details">
+          <div class="fg" style="margin:0;">
+            <label class="flabel">Avatar URL</label>
+            <input type="url" id="fAvatar" class="finput" placeholder="https://example.com/photo.jpg" style="max-width:300px;">
+          </div>
+          <small>Paste a public image URL or leave blank for initials</small>
+        </div>
+      </div>
+
+      <div class="s-grid-2">
+        <div class="fg"><label class="flabel" for="fName">Full Name</label><input type="text" id="fName" class="finput" placeholder="Jane Smith"></div>
+        <div class="fg"><label class="flabel" for="fUser">Username</label><input type="text" id="fUser" class="finput" placeholder="janesmith"></div>
+      </div>
+
+      <div class="fg">
+        <label class="flabel" for="fEmail">Email</label>
+        <input type="email" id="fEmail" class="finput" disabled style="opacity:0.5;cursor:not-allowed;" title="Email is managed via your auth provider">
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;">
+        <button class="btn btn-primary" id="saveBtn" style="padding:12px 30px;min-width:140px;">Save Profile</button>
+      </div>
+    </div>
+
+    <!-- ② Personalization -->
+    <div class="s-block">
+      <div class="s-block-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Personalization
+      </div>
+
+      <div class="s-grid-2">
+        <div class="fg"><label class="flabel" for="fNick">Preferred Name</label><input type="text" id="fNick" class="finput" placeholder="What should I call you?"></div>
+        <div class="fg"><label class="flabel" for="fOccup">Occupation</label><input type="text" id="fOccup" class="finput" placeholder="Software Engineer…"></div>
+      </div>
+
+      <div class="fg">
+        <label class="flabel" for="fTone">AI Response Tone</label>
+        <select id="fTone" class="finput">
+          <option value="helpful">🤝 Helpful &amp; Professional</option>
+          <option value="casual">😊 Casual &amp; Friendly</option>
+          <option value="concise">⚡ Concise &amp; Direct</option>
+          <option value="detailed">📚 Detailed &amp; Academic</option>
+          <option value="mentor">🎓 Mentor &amp; Teacher</option>
+          <option value="creative">🎨 Creative &amp; Playful</option>
+          <option value="technical">💻 Technical &amp; Precise</option>
+          <option value="socratic">🤔 Socratic (guide by questions)</option>
+        </select>
+      </div>
+
+      <div class="fg">
+        <label class="flabel" for="fAbout">About Me</label>
+        <textarea id="fAbout" class="finput" placeholder="Your background, goals, interests… helps me give more relevant answers." style="min-height:85px;"></textarea>
+      </div>
+
+      <div class="fg">
+        <label class="flabel" for="fInstr">Custom Instructions</label>
+        <textarea id="fInstr" class="finput" placeholder="How should I always respond? E.g. 'Always include code examples', 'Use bullet points', 'Assume CS background'…" style="min-height:95px;"></textarea>
+        <span class="fhint">Applied to every conversation when Memory is enabled.</span>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;">
+        <button class="btn btn-primary" id="saveBtn2" style="padding:12px 30px;min-width:140px;">Save Changes</button>
+      </div>
+    </div>
+
+    <!-- ③ Memory & Context -->
+    <div class="s-block">
+      <div class="s-block-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        Memory &amp; Context
+      </div>
+      <label class="toggle-row" for="tMem">
+        <div class="toggle-info">
+          <div class="ti-title">Use Saved Memory</div>
+          <div class="ti-desc">Include your profile, instructions, and personalization in every request</div>
+        </div>
+        <label class="tsw"><input type="checkbox" id="tMem" checked><span class="ttrack"></span></label>
+      </label>
+      <label class="toggle-row" for="tHist">
+        <div class="toggle-info">
+          <div class="ti-title">Send Chat History as Context</div>
+          <div class="ti-desc">Include recent messages so I can have multi-turn conversations</div>
+        </div>
+        <label class="tsw"><input type="checkbox" id="tHist" checked><span class="ttrack"></span></label>
+      </label>
+    </div>
+
+    <!-- ④ Appearance -->
+    <div class="s-block">
+      <div class="s-block-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        Appearance
+      </div>
+      <label class="toggle-row" for="tLight">
+        <div class="toggle-info">
+          <div class="ti-title">Light Mode</div>
+          <div class="ti-desc">Toggle between the dark atmospheric theme and light mode</div>
+        </div>
+        <label class="tsw"><input type="checkbox" id="tLight"><span class="ttrack"></span></label>
+      </label>
+    </div>
+
+    <!-- ⑤ Subscription -->
+    <div class="s-block">
+      <div class="s-block-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Subscription Plan
+      </div>
+      <div class="plan-grid">
+        <div class="plan-card" data-plan="free" tabindex="0" role="button" aria-label="Select Free plan">
+          <div class="plan-hd"><div class="plan-name">🌱 Free</div><div class="plan-ck">✓</div></div>
+          <div class="plan-price">$0 <small>/month</small></div>
+          <ul class="plan-feats">
+            <li>20 messages / day</li>
+            <li>Llama 3.1 8B + Mistral 7B</li>
+            <li>TXT &amp; Image uploads</li>
+            <li>Voice input</li>
+            <li>10 history messages</li>
+          </ul>
+        </div>
+        <div class="plan-card" data-plan="pro" tabindex="0" role="button" aria-label="Select Pro plan">
+          <div class="plan-hd"><div class="plan-name">✦ Pro</div><div class="plan-ck">✓</div></div>
+          <div class="plan-price">$12 <small>/month</small></div>
+          <ul class="plan-feats">
+            <li>Unlimited messages</li>
+            <li>All models + Nemotron 340B</li>
+            <li>Larger file uploads</li>
+            <li>Voice input</li>
+            <li>40 history messages</li>
+          </ul>
+        </div>
+      </div>
+      <p style="font-size:0.70rem;color:var(--text-4);text-align:center;">Simulated plan switch — no payment processed.</p>
+    </div>
+
+    <!-- ⑥ Danger Zone -->
+    <div class="s-block">
+      <div class="s-block-title" style="color:rgba(239,68,68,0.58);">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Danger Zone
+      </div>
+      <div>
+        <button class="btn btn-danger btn-sm" id="clearChatsBtn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+          Clear All Conversations
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast-root"></div>
+
+<script type="module" src="settings.js"></script>
+</body>
+</html>
