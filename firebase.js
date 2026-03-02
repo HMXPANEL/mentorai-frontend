@@ -2,9 +2,13 @@
  * firebase.js — Firebase SDK initialization
  */
 
-import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { 
+  getAuth, 
+  setPersistence, 
+  browserLocalPersistence 
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDXlL69d8zJNrLrq0HQYgFI2BS0BFPuf5o",
@@ -15,11 +19,21 @@ const firebaseConfig = {
   appId: "1:833665445588:web:0ad8476bb8503b4a5b9541"
 };
 
-/* Since this is real config, demo mode is OFF */
 export const DEMO_MODE = false;
 
-const app  = initializeApp(firebaseConfig);
+// Prevents crash if Firebase loads twice (Hot-reload safety)
+const app = getApps().length
+  ? getApps()[0]
+  : initializeApp(firebaseConfig);
+
 export const auth = getAuth(app);
 export const db   = getFirestore(app);
+
+// Professional Improvement: Async wrapper ensures persistence is set deterministically
+(async () => {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+  } catch {}
+})();
 
 export default app;

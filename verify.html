@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Email - MentorAI</title>
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <style>
+        :root {
+            --bg-color: #0a0a0f;
+            --card-bg: rgba(20, 20, 25, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #ffffff;
+            --text-secondary: #888da8;
+            --text-muted: #555a6e;
+            --accent-color: #6366f1;
+            --accent-hover: #818cf8;
+            --accent-glow: rgba(99, 102, 241, 0.4);
+            --success-bg: rgba(34, 197, 94, 0.1);
+            --success-border: rgba(34, 197, 94, 0.3);
+            --success-text: #4ade80;
+            --error-bg: rgba(239, 68, 68, 0.1);
+            --error-border: rgba(239, 68, 68, 0.3);
+            --error-text: #f87171;
+            --spinner-color: rgba(255,255,255,0.3);
+            --spinner-top: #fff;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --radius-sm: 6px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            line-height: 1.5;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Abstract Background Elements */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
+            animation: rotateBg 60s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes rotateBg {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Loading State */
+        .auth-loading { 
+            visibility: hidden; 
+            opacity: 0;
+        }
+        
+        body:not(.auth-loading) {
+            animation: fadeInBody 0.5s ease forwards;
+        }
+
+        @keyframes fadeInBody {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Container */
+        .auth-wrap {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+            margin: 20px auto;
+        }
+
+        /* Glass Card */
+        .auth-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            padding: 48px 40px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        body:not(.auth-loading) .auth-card {
+            animation: cardEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+        }
+
+        @keyframes cardEntrance {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Icon */
+        .auth-icon-wrapper {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 24px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            position: relative;
+        }
+
+        .auth-icon-wrapper::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 1px solid rgba(99, 102, 241, 0.1);
+            animation: iconPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes iconPing {
+            0% { transform: scale(1); opacity: 1; }
+            75%, 100% { transform: scale(1.3); opacity: 0; }
+        }
+
+        .auth-icon-svg {
+            width: 32px;
+            height: 32px;
+            fill: var(--accent-color);
+            animation: iconFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+        }
+
+        .subtext {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .helper-text {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .helper-text svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        /* Email Display */
+        .email-display {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .email-display span {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .email-display strong {
+            font-size: 15px;
+            color: var(--text-primary);
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        /* Buttons */
+        .auth-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            border: none;
+            outline: none;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+            padding: 14px 24px;
+            border-radius: var(--radius-md);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 50px;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            background: #424266;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            height: 46px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-secondary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .btn-link {
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 500;
+            padding: 8px;
+            margin-top: 8px;
+        }
+
+        .btn-link:hover {
+            color: var(--error-text);
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--spinner-color);
+            border-radius: 50%;
+            border-top-color: var(--spinner-top);
+            animation: spin 0.8s linear infinite;
+            position: absolute;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Status Boxes */
+        .success-box, .error-box {
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .success-box.show, .error-box.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .success-box {
+            background: var(--success-bg);
+            border: 1px solid var(--success-border);
+            color: var(--success-text);
+        }
+
+        .error-box {
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            color: var(--error-text);
+        }
+
+        /* Timer */
+        .timer-text {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timer-count {
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin: 0 2px;
+            min-width: 20px;
+            display: inline-block;
+        }
+
+        /* Footer */
+        .auth-footer {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Utilities */
+        .hidden { display: none !important; }
+        
+        /* Mobile Adjustments */
+        @media (max-width: 480px) {
+            .auth-card {
+                padding: 32px 24px;
+            }
+            h1 { font-size: 22px; }
+        }
+
+    </style>
+</head>
+
+<body class="auth-loading">
+
+    <div class="auth-wrap">
+        <div class="auth-card">
+            
+            <div class="auth-icon-wrapper" aria-hidden="true">
+                <svg class="auth-icon-svg" viewBox="0 0 24 24">
+                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                </svg>
+            </div>
+
+            <h1>Verify your email</h1>
+            <p class="subtext">
+                We've sent a verification link to complete your account setup.
+            </p>
+
+            <div class="email-display hidden" id="user-email-container">
+                <span>Sent to</span>
+                <strong id="user-email-display"></strong>
+            </div>
+            
+            <p class="helper-text">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                Didn't see it? Check your spam folder
+            </p>
+
+            <div class="success-box hidden" id="success-box" role="status">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <span id="success-message">Verification email sent</span>
+            </div>
+
+            <div class="error-box hidden" id="error-box" role="alert">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <span id="error-message"></span>
+            </div>
+
+            <div class="auth-actions">
+                <button id="btn-check-verification" class="btn-primary" type="button">
+                    <span class="btn-text">I've Verified My Email</span>
+                    <div class="spinner hidden" id="spinner-check"></div>
+                </button>
+
+                <button id="btn-resend" class="btn-secondary" type="button">
+                    <span class="btn-text">Resend Verification Email</span>
+                    <div class="spinner hidden" id="spinner-resend"></div>
+                </button>
+                
+                <div id="cooldown-timer" class="timer-text hidden" aria-live="polite">
+                    Resend available in <span id="timer-count">60</span>s
+                </div>
+
+                <div class="auth-footer">
+                    <button id="btn-logout" class="btn-link" type="button">
+                        Logout and use a different account
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+   <script type="module">
+import { auth } from "./firebase.js";
+import {
+    onAuthStateChanged,
+    sendEmailVerification,
+    signOut
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+/* ───────── DOM REFERENCES ───────── */
+
+const userEmailDisplay = document.getElementById("user-email-display");
+const userEmailContainer = document.getElementById("user-email-container");
+const successBox = document.getElementById("success-box");
+const successMessage = document.getElementById("success-message");
+const errorBox = document.getElementById("error-box");
+const errorMessage = document.getElementById("error-message");
+const btnCheck = document.getElementById("btn-check-verification");
+const btnResend = document.getElementById("btn-resend");
+const btnLogout = document.getElementById("btn-logout");
+const spinnerCheck = document.getElementById("spinner-check");
+const spinnerResend = document.getElementById("spinner-resend");
+const checkBtnText = btnCheck.querySelector(".btn-text");
+const resendBtnText = btnResend.querySelector(".btn-text");
+const cooldownTimerDiv = document.getElementById("cooldown-timer");
+const timerCountSpan = document.getElementById("timer-count");
+
+let cooldownInterval = null;
+
+/* ───────── AUTH STATE (STRICT GATE) ───────── */
+
+onAuthStateChanged(auth, async () => {
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
+        window.location.replace("login.html");
+        return;
+    }
+
+    try {
+        // Always reload from server (fresh state)
+        await currentUser.reload();
+    } catch {
+        // Network failure fallback — allow UI
+    }
+
+    // Re-check fresh reference
+    if (auth.currentUser?.emailVerified) {
+        window.location.replace("index.html");
+        return;
+    }
+
+    // Only now show UI
+    userEmailDisplay.textContent = auth.currentUser.email;
+    userEmailContainer.classList.remove("hidden");
+    document.body.classList.remove("auth-loading");
+});
+
+/* ───────── UI HELPERS ───────── */
+
+function showError(message) {
+    successBox.classList.add("hidden");
+    successBox.classList.remove("show");
+    errorMessage.textContent = message;
+    errorBox.classList.remove("hidden");
+    // Trigger reflow for animation
+    void errorBox.offsetWidth; 
+    errorBox.classList.add("show");
+    setTimeout(() => {
+        errorBox.classList.remove("show");
+        setTimeout(() => errorBox.classList.add("hidden"), 300);
+    }, 5000);
+}
+
+function showSuccess(message) {
+    errorBox.classList.add("hidden");
+    errorBox.classList.remove("show");
+    successMessage.textContent = message;
+    successBox.classList.remove("hidden");
+    void successBox.offsetWidth;
+    successBox.classList.add("show");
+    setTimeout(() => {
+        successBox.classList.remove("show");
+        setTimeout(() => successBox.classList.add("hidden"), 300);
+    }, 4000);
+}
+
+function setCheckLoading(state) {
+    btnCheck.disabled = state;
+    spinnerCheck.classList.toggle("hidden", !state);
+    checkBtnText.style.visibility = state ? 'hidden' : 'visible';
+    checkBtnText.textContent = "I've Verified My Email";
+}
+
+function setResendLoading(state) {
+    btnResend.disabled = state;
+    spinnerResend.classList.toggle("hidden", !state);
+    resendBtnText.style.visibility = state ? 'hidden' : 'visible';
+}
+
+/* ───────── CHECK VERIFICATION ───────── */
+
+btnCheck.addEventListener("click", async () => {
+    if (btnCheck.disabled) return;
+
+    setCheckLoading(true);
+    errorBox.classList.remove("show");
+    successBox.classList.remove("show");
+
+    try {
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+            window.location.replace("login.html");
+            return;
+        }
+
+        await currentUser.reload();
+
+        if (auth.currentUser?.emailVerified) {
+            window.location.replace("index.html");
+        } else {
+            showError("Email not verified yet. Please check your inbox.");
+        }
+
+    } catch {
+        showError("Unable to verify. Check your connection.");
+    } finally {
+        setCheckLoading(false);
+    }
+});
+
+/* ───────── RESEND EMAIL ───────── */
+
+btnResend.addEventListener("click", async () => {
+    if (btnResend.disabled) return;
+
+    setResendLoading(true);
+
+    try {
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+            window.location.replace("login.html");
+            return;
+        }
+
+        await sendEmailVerification(currentUser);
+
+        showSuccess("Verification email sent. Check your inbox.");
+        startCooldown();
+
+    } catch {
+        showError("Error sending email. Try again.");
+    } finally {
+        // Keep loading state if cooldown starts, otherwise disable
+        if(cooldownInterval) {
+             setResendLoading(false); 
+        } else {
+             setResendLoading(false);
+        }
+    }
+});
+
+/* ───────── LOGOUT ───────── */
+
+btnLogout.addEventListener("click", async () => {
+    try {
+        await signOut(auth);
+        window.location.replace("login.html");
+    } catch {
+        showError("Logout failed.");
+    }
+});
+
+/* ───────── COOLDOWN TIMER ───────── */
+
+function startCooldown() {
+    let timeLeft = 60;
+    cooldownTimerDiv.classList.remove("hidden");
+    timerCountSpan.textContent = timeLeft;
+    btnResend.disabled = true;
+
+    if (cooldownInterval) clearInterval(cooldownInterval);
+
+    cooldownInterval = setInterval(() => {
+        timeLeft--;
+        timerCountSpan.textContent = timeLeft;
+
+        if (timeLeft <= 0) {
+            clearInterval(cooldownInterval);
+            cooldownInterval = null;
+            cooldownTimerDiv.classList.add("hidden");
+            btnResend.disabled = false;
+        }
+    }, 1000);
+}
+
+/* ───────── FAILSAFE (UX ONLY) ───────── */
+
+setTimeout(() => {
+    document.body.classList.remove("auth-loading");
+}, 3000);
+
+   </script>
+</body>
+</html>
